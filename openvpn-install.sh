@@ -1041,9 +1041,27 @@ verb 3" >>/etc/openvpn/client-template.txt
 		echo "compress $COMPRESSION_ALG" >>/etc/openvpn/client-template.txt
 	fi
 
-	# Generate the custom client.ovpn
-	newClient
-	echo "If you want to add more clients, you simply need to run this script another time!"
+	EASYRSA_EXECUTABLE="/etc/openvpn/easy-rsa/easyrsa"
+
+	# Get Line Number of gen_req() {
+	GEN_REQ_LOCATION=$(cat $EASYRSA_EXECUTABLE | grep -n "gen_req() {" | awk "NR==1" | awk -F ':' '{print $1}')
+	# Get Line Number of first opts= after gen_req() {
+	OPTS_LOCATION=$(tail $EASYRSA_EXECUTABLE -n +$GEN_REQ_LOCATION | grep -n "opts=" | awk "NR==1" | awk -F ':' '{print $1}')
+
+	# Add Numbers to get global position of matched opts= statement
+	COMBINED_LOCATION=$(($GEN_REQ_LOCATION+$OPTS_LOCATION-1))
+
+	# Add -passout stdin to opts=
+	RESULT=$(cat $EASYRSA_EXECUTABLE | sed -e "${COMBINED_LOCATION}s/.*opts=/\topts=\"-passout stdin\"/")
+
+	EASYRSA_EXECUTABLE_STDN="$EASYRSA_EXECUTABLE-nostdin"
+	echo "$RESULT" > $EASYRSA_EXECUTABLE_STDN
+	chmod +x $EASYRSA_EXECUTABLE_STDN
+
+	curl -o /usr/bin/addvpn https://raw.githubusercontent.com/panelssh/openvpn-install/master/addvpn.sh
+	curl -o /usr/bin/delvpn https://raw.githubusercontent.com/panelssh/openvpn-install/master/delvpn.sh
+	chmod +x /usr/bin/addvpn
+	chmod +x /usr/bin/delvpn
 }
 
 function newClient() {
@@ -1269,6 +1287,8 @@ function removeOpenVPN() {
 		rm -rf /usr/share/doc/openvpn*
 		rm -f /etc/sysctl.d/99-openvpn.conf
 		rm -rf /var/log/openvpn
+		rm -rf /usr/bin/addvpn
+		rm -rf /usr/bin/delvpn
 
 		# Unbound
 		if [[ -e /etc/unbound/openvpn.conf ]]; then
