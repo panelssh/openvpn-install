@@ -16,13 +16,13 @@ chmod +x openvpn-install.sh
 
 ```bash
 # without password
-addvpn [clinet-name]
+addvpn [client-name]
 
-# without password
-addvpn [clinet-name] [password]
+# with password
+addvpn [client-name] [password]
 ```
 ## Remove Client User VPN
 
 ```bash
-delvpn [clinet-name]
+delvpn [client-name]
 ```
