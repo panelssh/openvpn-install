@@ -4,10 +4,13 @@ on:
       - master
 
 name: Test
+
 jobs:
   install:
     runs-on: ubuntu-latest
-    if: github.repository == 'angristan/openvpn-install' && github.actor == 'angristan'
+
+    if: github.repository == 'panelssh/openvpn-install' && github.actor == 'panelssh'
+
     strategy:
       matrix:
         os-image:
@@ -20,6 +23,7 @@ jobs:
           - fedora-33-x64
           - centos-7-x64
           - centos-8-x64
+
     steps:
       - uses: actions/checkout@v2
 
@@ -29,7 +33,7 @@ jobs:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
       - name: Create server
-        run: doctl compute droplet create openvpn-action-$GITHUB_RUN_ID-$GITHUB_RUN_NUMBER-${{ matrix.os-image }} --size s-1vcpu-1gb --image ${{ matrix.os-image }} --region lon1 --enable-ipv6 --ssh-keys be:66:76:61:a8:71:93:aa:e3:19:ba:d8:0d:d2:2d:d4 --wait
+        run: doctl compute droplet create openvpn-action-$GITHUB_RUN_ID-$GITHUB_RUN_NUMBER-${{ matrix.os-image }} --size s-1vcpu-1gb --image ${{ matrix.os-image }} --region lon1 --enable-ipv6 --ssh-keys ${{ secrets.SSH_FP }} --wait
 
       - name: Get server ID
         run: echo ::set-output name=value::$(doctl compute droplet list -o json | jq -r '.[] | select(.name == "'openvpn-action-$GITHUB_RUN_ID-$GITHUB_RUN_NUMBER-${{ matrix.os-image }}'").id')
@@ -82,7 +86,7 @@ jobs:
           host: ${{ steps.server_ip.outputs.value }}
           username: root
           key: ${{ secrets.SSH_KEY }}
-          script: set -x && git clone https://github.com/angristan/openvpn-install.git && cd openvpn-install && git checkout ${{ github.event.pull_request.head.sha }}
+          script: set -x && git clone https://github.com/panelssh/openvpn-install.git && cd openvpn-install && git checkout ${{ github.event.pull_request.head.sha }}
 
       - name: Run openvpn-install.sh in headless mode
         uses: appleboy/ssh-action@v0.1.4
